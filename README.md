@@ -29,7 +29,7 @@ In **ColorMaster**, you'll see a randomly generated color in the center of the s
 
 ## Scoring System
 
-Your guess is scored based on how closely it matches the actual color:
+Your guess is scored based on how closely it matches the actual color (using HSV color system):
 
 - 85%: Green (Excellent)
 - 70-85%: Yellow (Good)

@@ -233,31 +233,98 @@ function submitAnswer()
     Game.rounds = Game.rounds + 1
 end
 
--- Calculate color similarity
+-- -- Calculate color similarity
+-- function calculateColorSimilarity(inputHex)
+--     -- Validate hex format
+--     if not inputHex:match("^#[0-9A-F][0-9A-F][0-9A-F][0-9A-F]?[0-9A-F]?[0-9A-F]?$") then
+--         return 0
+--     end
+    
+--     -- Extract input RGB
+--     local r1 = tonumber(inputHex:sub(2, 3), 16) or 0
+--     local g1 = tonumber(inputHex:sub(4, 5), 16) or 0
+--     local b1 = tonumber(inputHex:sub(6, 7), 16) or 0
+    
+--     -- Target color
+--     local r2, g2, b2 = Game.targetColor[1], Game.targetColor[2], Game.targetColor[3]
+    
+--     -- Calculate RGB difference percentage
+--     local rDiff = math.abs(r1 - r2) / 255
+--     local gDiff = math.abs(g1 - g2) / 255
+--     local bDiff = math.abs(b1 - b2) / 255
+    
+--     -- Calculate similarity score (percentage)
+--     local diffScore = (rDiff + gDiff + bDiff) / 3
+--     local similarity = math.floor((1 - diffScore) * 100)
+    
+--     -- Ensure score between 0-100
+--     return math.max(0, math.min(100, similarity))
+-- end
+
 function calculateColorSimilarity(inputHex)
-    -- Validate hex format
-    if not inputHex:match("^#[0-9A-F][0-9A-F][0-9A-F][0-9A-F]?[0-9A-F]?[0-9A-F]?$") then
-        return 0
+    -- Validate Hex color format (supports #RGB and #RRGGBB)
+    if not inputHex:match("^#[0-9A-Fa-f][0-9A-Fa-f]?[0-9A-Fa-f]?[0-9A-Fa-f]?[0-9A-Fa-f]?[0-9A-Fa-f]?$") then
+        return 0  -- Invalid format
     end
-    
-    -- Extract input RGB
-    local r1 = tonumber(inputHex:sub(2, 3), 16) or 0
-    local g1 = tonumber(inputHex:sub(4, 5), 16) or 0
-    local b1 = tonumber(inputHex:sub(6, 7), 16) or 0
-    
-    -- Target color
+
+    -- Extract input RGB values (normalize 3-digit Hex to 6-digit)
+    local r1, g1, b1
+    if #inputHex == 4 then  -- #RGB format
+        r1 = tonumber(inputHex:sub(2, 2), 16) * 17  -- Expand to 00-FF
+        g1 = tonumber(inputHex:sub(3, 3), 16) * 17
+        b1 = tonumber(inputHex:sub(4, 4), 16) * 17
+    else  -- #RRGGBB format
+        r1 = tonumber(inputHex:sub(2, 3), 16) or 0
+        g1 = tonumber(inputHex:sub(4, 5), 16) or 0
+        b1 = tonumber(inputHex:sub(6, 7), 16) or 0
+    end
+
+    -- Target color RGB (assuming Game.targetColor is {r, g, b})
     local r2, g2, b2 = Game.targetColor[1], Game.targetColor[2], Game.targetColor[3]
-    
-    -- Calculate RGB difference percentage
-    local rDiff = math.abs(r1 - r2) / 255
-    local gDiff = math.abs(g1 - g2) / 255
-    local bDiff = math.abs(b1 - b2) / 255
-    
-    -- Calculate similarity score (percentage)
-    local diffScore = (rDiff + gDiff + bDiff) / 3
-    local similarity = math.floor((1 - diffScore) * 100)
-    
-    -- Ensure score between 0-100
+
+    -- Convert RGB to HSV (Hue: [0,360], Saturation: [0,1], Value: [0,1])
+    local function rgbToHsv(r, g, b)
+        r, g, b = r / 255, g / 255, b / 255  -- Normalize to [0,1]
+        local max, min = math.max(r, g, b), math.min(r, g, b)
+        local delta = max - min
+
+        local h, s, v
+        if delta == 0 then
+            h = 0  -- Achromatic (no hue)
+        else
+            -- Calculate hue based on dominant channel
+            if max == r then
+                h = 60 * ((g - b) / delta % 6)
+            elseif max == g then
+                h = 60 * ((b - r) / delta + 2)
+            else
+                h = 60 * ((r - g) / delta + 4)
+            end
+        end
+
+        s = max == 0 and 0 or (delta / max)  -- Avoid division by zero
+        v = max  -- Value is the maximum RGB component
+
+        return h, s, v
+    end
+
+    -- Get HSV values for both colors
+    local h1, s1, v1 = rgbToHsv(r1, g1, b1)
+    local h2, s2, v2 = rgbToHsv(r2, g2, b2)
+
+    -- Calculate normalized HSV differences (range [0,1])
+    local hDiff = math.min(math.abs(h1 - h2), 360 - math.abs(h1 - h2)) / 180  -- Hue is circular (max 180° difference)
+    local sDiff = math.abs(s1 - s2)  -- Saturation difference
+    local vDiff = math.abs(v1 - v2)  -- Value difference
+
+    -- Weighted total difference (adjust weights as needed)
+    -- Default weights: Hue (50%), Saturation (20%), Value (30%)
+    local totalDiff = (hDiff * 0.5 + sDiff * 0.2 + vDiff * 0.3)
+
+    -- Convert to similarity percentage (0-100)
+    local similarity = math.floor((1 - totalDiff) * 100)
+
+    -- Clamp to valid range
     return math.max(0, math.min(100, similarity))
 end
 
