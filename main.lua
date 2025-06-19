@@ -70,7 +70,7 @@ function love.draw()
     
     -- Draw round count
     love.graphics.setColor(0.7, 0.7, 0.7)
-    love.graphics.print("Rounds: " .. Game.rounds, 700, 570)
+    love.graphics.print("Rounds: " .. Game.rounds, 600, 570)
     
     -- Draw game state message
     if Game.gameStatus == "result" then
