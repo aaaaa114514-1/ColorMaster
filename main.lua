@@ -269,6 +269,10 @@ function drawResult()
         Game.targetColor[2], 
         Game.targetColor[3])
     
+    -- Get UserHex
+    local userHex = Game.inputText:upper()
+    if #userHex < 6 then userHex = "#000000" end  -- 无效输入处理
+    
     -- Draw result box
     love.graphics.setColor(0.1, 0.1, 0.2)
     love.graphics.rectangle("fill", 150, 380, 500, 130, 10)
@@ -280,11 +284,27 @@ function drawResult()
     
     -- Draw result text
     love.graphics.setColor(1, 1, 1)
-    
-    love.graphics.print("RESULT", 380, 395)
-    
+
+    -- Change result text position
     love.graphics.setColor(0.8, 0.8, 1)
     love.graphics.print("Correct answer: " .. targetHex, 220, 430)
+    
+    -- Draw user color block
+    if not userHex:find("#") then
+        userHex = "#" .. userHex
+    end
+    drawColorBlock(330, 460, 60, 30, {
+        tonumber(userHex:sub(2,3) or "00", 16) or 0,
+        tonumber(userHex:sub(4,5) or "00", 16) or 0,
+        tonumber(userHex:sub(6,7) or "00", 16) or 0
+    })
+    
+    -- Draw correct color block
+    drawColorBlock(550, 460, 60, 30, Game.targetColor)
+    
+    love.graphics.setColor(0.8, 0.8, 1)
+    love.graphics.print("Your color:", 217, 460)
+    love.graphics.print("Correct color:", 405, 460)
     
     -- Set score color based on performance
     if Game.score > 85 then
@@ -297,7 +317,7 @@ function drawResult()
         love.graphics.setColor(1, 0.2, 0)     -- Red
     end
     
-    love.graphics.print("Score: " .. Game.score, 220, 460)
+    love.graphics.print("Score: " .. Game.score, 370, 395)
 end
 
 -- Start new round
